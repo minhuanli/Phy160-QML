@@ -18,7 +18,7 @@ def UnitaryNlocal(reps=3, N=4):
         
     Return
     ------
-    Qiskit BlueprintCircuit, the Nlocal citcuit
+    Qiskit BlueprintCircuit, the Nlocal circuit
     '''
     # rotation block:
     rot = QuantumCircuit(2)
