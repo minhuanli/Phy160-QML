@@ -1,7 +1,7 @@
 from qiskit.circuit import QuantumCircuit, ParameterVector
 from qiskit.circuit.library import NLocal
 
-__all__ = ['UnitaryNlocal4', 'UnitaryNlocal2']
+__all__ = ['UnitaryNlocal4', 'UnitaryNlocal2', 'Controlled_Unitary']
 
 def UnitaryNlocal4(reps=3, name='U4', parameter_prefix='u4_x'):
     '''
