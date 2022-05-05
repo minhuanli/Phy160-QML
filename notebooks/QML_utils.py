@@ -1,7 +1,7 @@
 from qiskit.circuit import QuantumCircuit, ParameterVector
 from qiskit.circuit.library import NLocal
 
-def UnitaryNlocal(reps=3, N=4):
+def UnitaryNlocal4(reps=3, name='U4'):
     '''
     A utility function to create a parameterized Nlocal circuit 
     as an approximation of the N-qubits Unitaries
@@ -12,13 +12,10 @@ def UnitaryNlocal(reps=3, N=4):
         How often the rotation blocks and entanglement blocks are repeated. 
         Circuit with more layers should have higher expressive power, 
         but might be hard to optimize
-    
-    N: Int, default 4
-        Number of qubits where the unitary applied to
         
     Return
     ------
-    Qiskit BlueprintCircuit, the Nlocal circuit
+    Qiskit BlueprintCircuit, the Nlocal citcuit
     '''
     # rotation block:
     rot = QuantumCircuit(2)
@@ -35,8 +32,46 @@ def UnitaryNlocal(reps=3, N=4):
     ent.crx(params[1], 1, 2)
     ent.crx(params[2], 0, 2)
 
-    qc_nlocal = NLocal(num_qubits=4, rotation_blocks=rot, reps=reps, 
+    qc_nlocal = NLocal(num_qubits=4, rotation_blocks=rot, reps=reps, name=name,  
                        entanglement_blocks=ent, entanglement='linear',
                        skip_final_rotation_layer=True, insert_barriers=True)
     
+    return qc_nlocal
+
+
+def UnitaryNlocal2(reps=2, name='U2'):
+    '''
+    A utility function to create a parameterized Nlocal circuit 
+    as an approximation of the 2-qubits Unitaries
+    
+    Parameters
+    ----------
+    reps: Int, default 2
+        How often the rotation blocks and entanglement blocks are repeated. 
+        Circuit with more layers should have higher expressive power, 
+        but might be hard to optimize
+        
+    Return
+    ------
+    Qiskit BlueprintCircuit, the Nlocal citcuit
+    '''
+    # rotation block:
+    rot = QuantumCircuit(2)
+    params = ParameterVector('r', 4)
+    rot.ry(params[0], 0)
+    rot.rz(params[0], 0)
+    rot.ry(params[2], 1)
+    rot.rz(params[3], 1)
+
+    # entanglement block:
+    ent = QuantumCircuit(2)
+    params = ParameterVector('e', 4)
+    ent.crx(params[0], 0, 1)
+    ent.crx(params[1], 1, 0)
+    ent.crx(params[2], 0, 1)
+    ent.crx(params[3], 1, 0)
+
+    qc_nlocal = NLocal(num_qubits=2, rotation_blocks=rot,reps=2, name=name, 
+                       entanglement_blocks=ent, entanglement='linear',
+                       skip_final_rotation_layer=True, insert_barriers=True)
     return qc_nlocal
