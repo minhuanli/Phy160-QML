@@ -3,7 +3,7 @@ from qiskit.circuit.library import NLocal
 
 __all__ = ['UnitaryNlocal4', 'UnitaryNlocal2']
 
-def UnitaryNlocal4(reps=3, name='U4'):
+def UnitaryNlocal4(reps=3, name='U4', parameter_prefix='u4_x'):
     '''
     A utility function to create a parameterized Nlocal circuit 
     as an approximation of the N-qubits Unitaries
@@ -14,6 +14,12 @@ def UnitaryNlocal4(reps=3, name='U4'):
         How often the rotation blocks and entanglement blocks are repeated. 
         Circuit with more layers should have higher expressive power, 
         but might be hard to optimize
+    
+    name: str, default 'U4'
+        name of the output circuit
+        
+    parameter_prefix: str, default 'u4_x'
+        prefix for the parameters, to avoid conflict when compose
         
     Return
     ------
@@ -34,14 +40,15 @@ def UnitaryNlocal4(reps=3, name='U4'):
     ent.crx(params[1], 1, 2)
     ent.crx(params[2], 0, 2)
 
-    qc_nlocal = NLocal(num_qubits=4, rotation_blocks=rot, reps=reps, name=name,  
+    qc_nlocal = NLocal(num_qubits=4, rotation_blocks=rot, reps=reps, name=name,
+                       parameter_prefix=parameter_prefix,
                        entanglement_blocks=ent, entanglement='linear',
                        skip_final_rotation_layer=True, insert_barriers=True)
     
     return qc_nlocal
 
 
-def UnitaryNlocal2(reps=2, name='U2'):
+def UnitaryNlocal2(reps=2, name='U2', parameter_prefix='u2_x'):
     '''
     A utility function to create a parameterized Nlocal circuit 
     as an approximation of the 2-qubits Unitaries
@@ -52,6 +59,13 @@ def UnitaryNlocal2(reps=2, name='U2'):
         How often the rotation blocks and entanglement blocks are repeated. 
         Circuit with more layers should have higher expressive power, 
         but might be hard to optimize
+    
+    name: str, default 'U2'
+        name of the output circuit
+        
+    parameter_prefix: str, default 'u2_x'
+        prefix for the parameters, to avoid conflict when compose
+        
         
     Return
     ------
@@ -74,11 +88,12 @@ def UnitaryNlocal2(reps=2, name='U2'):
     ent.crx(params[3], 1, 0)
 
     qc_nlocal = NLocal(num_qubits=2, rotation_blocks=rot,reps=2, name=name, 
+                       parameter_prefix=parameter_prefix,
                        entanglement_blocks=ent, entanglement='linear',
                        skip_final_rotation_layer=True, insert_barriers=True)
     return qc_nlocal
 
-def Controlled_Unitary(k):
+def Controlled_Unitary(k, name='CU2', parameter_prefix='cu_x'):
     '''
     A utility function to create a controlled unitary with 2 control qubits, 2 target qubits
     
@@ -86,6 +101,12 @@ def Controlled_Unitary(k):
     ----------
     k:  int tuple, represents control qubit state 
         (k_1,k_2) are binary, 1 if x is applied 
+    
+    name: str, default 'CU2'
+        name of the output unitary circuit
+        
+    parameter_prefix: str, default 'cu_x'
+        prefix for the parameters, to avoid conflict when compose
 
     Return
     ------
@@ -95,9 +116,9 @@ def Controlled_Unitary(k):
     qc = QuantumCircuit(4)
 
     # get qc_nlocal circuit but for 2 qubits 
-    circ = UnitaryNlocal2()
+    circ = UnitaryNlocal2(name=name, parameter_prefix=parameter_prefix)
 
-    gate = circ.to_gate
+    gate = circ.to_gate()
     if k_1 == 1:
         qc.x(0)
     if k_2 == 1:
@@ -108,4 +129,4 @@ def Controlled_Unitary(k):
     if k_2 == 1: 
         qc.x(1)
         
-    return qc.to_gate()
+    return qc
