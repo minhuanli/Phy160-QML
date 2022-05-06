@@ -29,7 +29,7 @@ def UnitaryNlocal4(reps=3, name='U4', parameter_prefix='u4_x'):
     rot = QuantumCircuit(2)
     params = ParameterVector('r', 4)
     rot.ry(params[0], 0)
-    rot.rz(params[0], 0)
+    rot.rz(params[1], 0)
     rot.ry(params[2], 1)
     rot.rz(params[3], 1)
 
@@ -75,7 +75,7 @@ def UnitaryNlocal2(reps=2, name='U2', parameter_prefix='u2_x'):
     rot = QuantumCircuit(2)
     params = ParameterVector('r', 4)
     rot.ry(params[0], 0)
-    rot.rz(params[0], 0)
+    rot.rz(params[1], 0)
     rot.ry(params[2], 1)
     rot.rz(params[3], 1)
 
@@ -92,41 +92,3 @@ def UnitaryNlocal2(reps=2, name='U2', parameter_prefix='u2_x'):
                        entanglement_blocks=ent, entanglement='linear',
                        skip_final_rotation_layer=True, insert_barriers=True)
     return qc_nlocal
-
-def Controlled_Unitary(k, name='CU2', parameter_prefix='cu_x'):
-    '''
-    A utility function to create a controlled unitary with 2 control qubits, 2 target qubits
-    
-    Parameters
-    ----------
-    k:  int tuple, represents control qubit state 
-        (k_1,k_2) are binary, 1 if x is applied 
-    
-    name: str, default 'CU2'
-        name of the output unitary circuit
-        
-    parameter_prefix: str, default 'cu_x'
-        prefix for the parameters, to avoid conflict when compose
-
-    Return
-    ------
-    Circuit Object
-    ''' 
-    k_1,k_2 = k
-    qc = QuantumCircuit(4)
-
-    # get qc_nlocal circuit but for 2 qubits 
-    circ = UnitaryNlocal2(name=name, parameter_prefix=parameter_prefix)
-
-    gate = circ.to_gate()
-    if k_1 == 1:
-        qc.x(0)
-    if k_2 == 1:
-        qc.x(1)
-    qc.append(gate.control(2), [0,1,2,3])
-    if k_1 == 1:
-        qc.x(0)
-    if k_2 == 1: 
-        qc.x(1)
-        
-    return qc
