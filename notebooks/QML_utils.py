@@ -1,8 +1,14 @@
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ParameterVector
 from qiskit.circuit.library import NLocal
 from qiskit.circuit.library.standard_gates import RYGate, RZGate, RXGate
+from qiskit import ClassicalRegister, QuantumRegister
+from qiskit.providers.aer import AerSimulator
+from qiskit import transpile, assemble
 
-__all__ = ['UnitaryNlocal4', 'UnitaryNlocal2', 'CU2Nlocal', 'UniformControl2']
+import numpy as np
+
+
+#__all__ = ['UnitaryNlocal4', 'UnitaryNlocal2', 'CU2Nlocal', 'UniformControl2']
 
 def UnitaryNlocal4(reps=3, name='U4', parameter_prefix='u4_x'):
     '''
@@ -214,3 +220,77 @@ def UniformControl2(reps=3, name='Ut', parameter_prefix='Ut_x'):
     UCU2.append(CU00, [0,1,2,3])
     
     return UCU2
+
+
+def Create_BBQC4():
+    Up = UnitaryNlocal2(reps=2, name=r"$U_p$", parameter_prefix=r"$U_px$")
+    Ut2 = UniformControl2(reps=2, name=r"$U_t^{(2)}$", parameter_prefix=r"$U_t^{(2)}x$")
+    Uo1 = UnitaryNlocal4(reps=3, name=r"$U_o^{(1)}$", parameter_prefix=r"$U_o^{(1)}$")
+    Ut3 = UniformControl2(reps=2, name=r"$U_t^{(3)}$", parameter_prefix=r"$U_t^{(3)}x$")
+    Uo2 = UnitaryNlocal4(reps=3, name=r"$U_o^{(2)}$", parameter_prefix=r"$U_o^{(2)}$")
+    Uo3 = UnitaryNlocal4(reps=3, name=r"$U_o^{(3)}$", parameter_prefix=r"$U_o^{(3)}$")
+    Uo4 = UnitaryNlocal4(reps=3, name=r"$U_o^{(4)}$", parameter_prefix=r"$U_o^{(4)}$")
+    Ut4 = UniformControl2(reps=2, name=r"$U_t^{(4)}$", parameter_prefix=r"$U_t^{(4)}x$")
+    BBQC = QuantumCircuit(QuantumRegister(16), ClassicalRegister(8))
+    BBQC.append(Up, [0,1])
+    BBQC.append(Ut2, [0,1,4,5])
+    BBQC.append(Ut3, [4,5,8,9])
+    BBQC.append(Ut4, [8,9,12,13])
+    BBQC.append(Uo1, [0,1,2,3])
+    BBQC.append(Uo2, [4,5,6,7])
+    BBQC.append(Uo3, [8,9,10,11])
+    BBQC.append(Uo4, [12,13,14,15])
+    BBQC.measure([2,3,6,7,10,11,14,15], [0,1,2,3,4,5,6,7])
+    return BBQC
+
+def convert_str(genelist):
+    output = ""
+    for i in genelist:
+        if i == 0:
+            output += '00'
+        if i == 1:
+            output += '01'
+        if i == 2:
+            output += '10'
+        if i == 3:
+            output += '11'
+    return output
+    
+def measure_result(BBQC, simulator, x, n_shots=1000):
+    value_dict = dict(zip(BBQC.parameters, x))
+    tcirc = transpile(BBQC, simulator)
+    qobj = assemble(tcirc, shots=n_shots, parameter_binds = [value_dict])
+    result = simulator.run(qobj).result()
+    return result.get_counts()
+
+def NLL(counts, databatch, n_shots=1000):
+    NLL = 0.
+    for i in databatch:
+        temp = counts.get(i)
+        if temp is None:
+            NLL += 2*np.log2(n_shots)
+        else:
+            NLL += -np.log2(temp/n_shots)
+    return NLL/len(databatch)
+
+def gradient(x, databatch, BBQC, simulator, n_shots=1000, eps=0.2):
+    epsilon = eps*2*np.pi*np.random.uniform(size=BBQC.num_parameters)
+    countsplus = measure_result(BBQC, simulator, x+epsilon, n_shots=n_shots)
+    countsminus = measure_result(BBQC, simulator, x-epsilon, n_shots=n_shots)
+    counts = measure_result(BBQC, simulator, x, n_shots=n_shots)
+    NLL_plus = NLL(countsplus, databatch)
+    NLL_minus = NLL(countsminus, databatch)
+    FD_dfdx = (NLL_plus - NLL_minus)/2*epsilon
+    NLL_x =  NLL(counts, databatch)
+    return FD_dfdx, NLL_x
+
+def training(initial_x, traindata, BBQC, similator, batchsize=8, n_steps=50, loss_track=[], alpha=0.01):
+    N = len(traindata)
+    x = initial_x
+    for i in range(n_steps):
+        I = np.random.choice(N, size=batchsize)
+        databatch = traindata[I]
+        dfdx, NLL_x = gradient(x, databatch, BBQC, simulator)
+        loss_track.append(NLL_x)
+        x = x - alpha * dfdx  
+    return x, loss_track
